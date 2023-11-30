@@ -14,7 +14,7 @@ export default class ArgusQueueController {
 
     }
 
-    async argusImport(req) {
+    async argusImport(req, force) {
         //Retorna o horário de São Paulo
         const now = DateTime.now().setZone('America/Sao_Paulo');
 
@@ -54,7 +54,7 @@ export default class ArgusQueueController {
             body: body
         };
 
-        if ((now.hour >= 20 && now.minute >= 30) || (now.hour <= 8)){
+        if ((now.hour >= 20 && now.minute >= 30) || (now.hour <= 8) || force){
             //Verifica se esta dentro da faixa de horário para adicionar os requests a fila
             try{
                 const RequestQueue = await mongo.getCollection(userId, 'RequestQueue');      
@@ -91,7 +91,7 @@ export default class ArgusQueueController {
         //Armazeda dados da requisição e da resposta do Argus para serem inseridos no banco
         const payload = {
             request,
-            response      
+            response     
         };
 
         try{
@@ -114,7 +114,7 @@ export default class ArgusQueueController {
 
         return {
             status: 200,
-            message: JSON.stringify(payload)
+            body: { ...payload}
         }; 
     }
 
@@ -139,6 +139,8 @@ export default class ArgusQueueController {
     
         //Cria variavel para armazenar a lista com os leads da madrugada
         var leadList = [];
+
+        var responseArray = [];
     
         try{
             const RequestQueue = await mongo.getCollection(userId, 'RequestQueue');
@@ -168,6 +170,8 @@ export default class ArgusQueueController {
                     request,
                     response      
                 };
+
+                responseArray.push(payload);
                 
                 await ResponseList.insertOne({ 
                     ...payload,
@@ -217,7 +221,7 @@ export default class ArgusQueueController {
     
         return {
             status: 200,
-            message: 'Leads importados'
+            body: [ ...responseArray ]
         }; 
     }
 
@@ -247,7 +251,7 @@ export default class ArgusQueueController {
         //Configura options do axios para fazer a requisição ao Argus
         const options = {
             baseURL: process.env.ARGUS_ENDPOINT,
-            url: '/', //url,
+            url: path, //url,
             method,
             headers: { ...requestReaders },
             data

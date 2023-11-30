@@ -85,7 +85,7 @@ export const handler = async (event, context) => {
         method,
     };
 
-    if (path && path.includes('import-queue')){
+    if (path && path.includes('import-requests')){
         console.log('Iniciando importação!');
 
         let leads = await queue.argusMassImport();
@@ -98,7 +98,13 @@ export const handler = async (event, context) => {
         return response;
     }
 
-    var lead = await queue.argusImport(request);    
+    var forceQueue = false;
+
+    if (path && path.includes('import-to-queue')){
+        forceQueue = true;
+    }
+
+    var lead = await queue.argusImport(request, forceQueue);    
 
     const response = {
         statusCode: 200,
